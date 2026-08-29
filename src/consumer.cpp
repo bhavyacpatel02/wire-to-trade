@@ -3,12 +3,28 @@
 #include <unistd.h>
 
 #include <cerrno>
+#include <csignal>
+#include <cstring>
 #include <iostream>
 
 #include "constants.h"
 #include "message.h"
 
+// Bunch of signal handling boilerplate
+static volatile sig_atomic_t g_stop = 0;
+extern "C" void handle_stop(int) { g_stop = 1; }
+static void install_signal_handlers() {
+    struct sigaction sa{};
+    sa.sa_handler = handle_stop;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = 0;  // NOT SA_RESTART — we want recvmsg to return EINTR
+    sigaction(SIGINT, &sa, nullptr);
+    sigaction(SIGTERM, &sa, nullptr);
+}
+
 int main() {
+    install_signal_handlers();
+
     int sock = socket(AF_INET, SOCK_DGRAM, 0);
     if (sock < 0) {
         std::cerr << "Failed to create socket, errno=" << errno << "\n";
@@ -46,6 +62,7 @@ int main() {
     msg.msg_iov = &iov;
     msg.msg_iovlen = 1;
 
+    int prev_seq_num = 0;
     while (true) {
         // Reset msg_namelen before each call because recvmsg updates it
         msg.msg_namelen = sizeof(client_addr);
@@ -53,7 +70,12 @@ int main() {
         ssize_t bytes_received = recvmsg(sock, &msg, 0);
 
         if (bytes_received < 0) {
-            std::cerr << "Failed to receive bytes, errno=" << errno << "\n";
+            if (errno == EINTR) {
+                if (g_stop) break;  // Shutdown requested
+                continue;           // Some other signal, resume waiting
+            }
+            std::cerr << "Failed to recevied bytes, errno=" << errno << " ("
+                      << std::strerror(errno) << ")\n";
             break;
         }
 
@@ -66,7 +88,8 @@ int main() {
         inet_ntop(AF_INET, &(client_addr.sin_addr), client_ip, INET_ADDRSTRLEN);
 
         if (bytes_received != sizeof(Message)) {
-            std::cerr << "WARNING: Bytes received does not match Message size, skipping packet.";
+            std::cerr << "WARNING: Bytes received does not match Message size, "
+                         "skipping packet.";
             continue;
         }
 
