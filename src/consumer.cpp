@@ -59,18 +59,23 @@ int main() {
 
         // Check macOS BSD truncation flag
         if (msg.msg_flags & MSG_TRUNC) {
-            std::cerr << "WARNING: DATA TRUNCATED!\n";
+            std::cerr << "WARNING: Data truncated!\n";
         }
-
-        // Null-terminate data
-        buffer[bytes_received] = '\0';
 
         char client_ip[INET_ADDRSTRLEN];
         inet_ntop(AF_INET, &(client_addr.sin_addr), client_ip, INET_ADDRSTRLEN);
 
+        if (bytes_received != sizeof(Message)) {
+            std::cerr << "WARNING: Bytes received does not match Message size, skipping packet.";
+            continue;
+        }
+
+        Message m;
+        memcpy(&m, buffer, sizeof(m));  // Interpret buffer's bytes as a Message
+
         std::cout << "Received " << bytes_received << " bytes from "
-                  << client_ip << ":" << ntohs(client_addr.sin_port) << " -> "
-                  << buffer << "\n";
+                  << client_ip << ":" << ntohs(client_addr.sin_port)
+                  << " -> message #" << m.seq_num << "\n";
     }
 
     // Cleanup
