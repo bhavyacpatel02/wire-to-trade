@@ -1,0 +1,12 @@
+# Build output
+build/
+*.o
+*.d
+*.dSYM/
+
+# Stray binaries from ad-hoc compiles
+*.tsk
+
+# Generated data and measurement output (Phase 1+).
+# Commit the generator and a README that says how to regenerate; never the bytes.
+data/
