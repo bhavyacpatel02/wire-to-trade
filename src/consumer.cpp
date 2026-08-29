@@ -4,7 +4,7 @@
 #include <unistd.h>
 
 constexpr int PORT = 8080;
-constexpr size_t BUFFER_SIZE = 3;
+constexpr size_t BUFFER_SIZE = 1024;
 
 int main(int argc, char** argv) {
     int sock = socket(AF_INET, SOCK_DGRAM, 0);
@@ -30,21 +30,32 @@ int main(int argc, char** argv) {
     // Receive data
     char buffer[BUFFER_SIZE];
     sockaddr_in client_addr{};
-    socklen_t client_len = sizeof(client_addr);
+
+    // Some boilerplate stuff for recvmsg
+    iovec iov{};
+    iov.iov_base = buffer;
+    iov.iov_len = BUFFER_SIZE - 1;
+
+    msghdr msg{};
+    msg.msg_name = &client_addr;
+    msg.msg_namelen = sizeof(client_addr);
+    msg.msg_iov = &iov;
+    msg.msg_iovlen = 1;
 
     while (true) {
-        ssize_t bytes_received = recvfrom(
-            sock,
-            buffer,
-            BUFFER_SIZE - 1,
-            0,
-            reinterpret_cast<sockaddr*>(&client_addr),
-            &client_len
-        );
+        // Reset msg_namelen before each call because recvmsg updates it
+        msg.msg_namelen = sizeof(client_addr);
+
+        ssize_t bytes_received = recvmsg(sock, &msg, 0);
 
         if (bytes_received < 0) {
             std::cerr << "Failed to receive bytes, errno=" << bytes_received << "\n";
             break;
+        }
+
+        // Check macOS BSD truncation flag
+        if (msg.msg_flags & MSG_TRUNC) {
+            std::cerr << "WARNING: DATA TRUNCATED!\n";
         }
 
         // Null-terminate data
