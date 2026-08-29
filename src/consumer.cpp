@@ -4,12 +4,12 @@
 #include <unistd.h>
 
 constexpr int PORT = 8080;
-constexpr size_t BUFFER_SIZE = 1024;
+constexpr size_t BUFFER_SIZE = 3;
 
 int main(int argc, char** argv) {
     int sock = socket(AF_INET, SOCK_DGRAM, 0);
     if (sock < 0) {
-        std::cerr << "Failed to create socket\n";
+        std::cerr << "Failed to create socket, errno=" << sock << "\n";
         return 1;
     }
 
@@ -21,7 +21,7 @@ int main(int argc, char** argv) {
 
     // Bind to port
     if (bind(sock, reinterpret_cast<sockaddr*>(&server_addr), sizeof(server_addr)) < 0) {
-        std::cerr << "Bind failed\n";
+        std::cerr << "Bind failed, errno=" << sock << "\n";
         close(sock);
         return 1;
     }
@@ -43,7 +43,7 @@ int main(int argc, char** argv) {
         );
 
         if (bytes_received < 0) {
-            std::cerr << "Receive error\n";
+            std::cerr << "Failed to receive bytes, errno=" << bytes_received << "\n";
             break;
         }
 
