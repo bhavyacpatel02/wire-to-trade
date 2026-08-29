@@ -99,6 +99,12 @@ int main() {
         std::cout << "Received " << bytes_received << " bytes from "
                   << client_ip << ":" << ntohs(client_addr.sin_port)
                   << " -> message #" << m.seq_num << "\n";
+
+        if (m.seq_num - prev_seq_num > 1) {
+            std::cerr << "WARNING: Sequence numbers in range ["
+                      << prev_seq_num + 1 << ", " << m.seq_num - 1
+                      << "] dropped\n";
+        }
     }
 
     // Cleanup
