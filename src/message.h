@@ -1,7 +1,12 @@
-#include <cstddef>
+#ifndef MESSAGE_H
+#define MESSAGE_H
+
+#include <cstdint>
 
 struct Message {
-    std::size_t seq_num;
-    std::size_t quantity;
-    std::size_t price;
+    uint32_t seq_num;
+    uint32_t quantity;
+    uint32_t price;
 };
+
+#endif
