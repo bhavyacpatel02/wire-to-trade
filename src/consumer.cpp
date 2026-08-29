@@ -107,7 +107,7 @@ int main() {
                   << " -> message #" << m.seq_num << "\n";
 
         if (m.seq_num - recv_counts.max_seq_num > 1) {
-            recv_counts.dropped = m.seq_num - recv_counts.max_seq_num - 1;
+            recv_counts.dropped += m.seq_num - recv_counts.max_seq_num - 1;
         }
         recv_counts.max_seq_num = m.seq_num;
     }
