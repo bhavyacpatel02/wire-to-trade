@@ -1,7 +1,10 @@
-#include <iostream>
-#include <sys/socket.h>
 #include <arpa/inet.h>
+#include <sys/socket.h>
 #include <unistd.h>
+
+#include <array>
+#include <iostream>
+#include <string_view>
 
 constexpr const char* SERVER_IP = "127.0.0.1";
 constexpr int PORT = 8080;
@@ -26,20 +29,15 @@ int main() {
     }
 
     // Messages to send
-    static constexpr std::array<std::string_view, 2> messages = {
-        "Hello",
-        "World!"
-    };
+    static constexpr std::array<std::string_view, 2> messages = {"Hello",
+                                                                 "World!"};
 
     for (const auto msg : messages) {
         ssize_t bytes_sent = sendto(
             sock,
-            msg.data(), // Pointer to contiguous byte buffer
-            msg.size(), // Exact size in bytes
-            0,
-            reinterpret_cast<sockaddr*>(&dest_addr),
-            sizeof(dest_addr)
-        );
+            msg.data(),  // Pointer to contiguous byte buffer
+            msg.size(),  // Exact size in bytes
+            0, reinterpret_cast<sockaddr*>(&dest_addr), sizeof(dest_addr));
     }
 
     return 0;

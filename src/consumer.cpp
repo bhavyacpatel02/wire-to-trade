@@ -1,7 +1,8 @@
-#include <iostream>
-#include <sys/socket.h>
 #include <arpa/inet.h>
+#include <sys/socket.h>
 #include <unistd.h>
+
+#include <iostream>
 
 constexpr int PORT = 8080;
 constexpr size_t BUFFER_SIZE = 1024;
@@ -16,11 +17,13 @@ int main() {
     // Socket address boilerplate
     sockaddr_in server_addr{};
     server_addr.sin_family = AF_INET;
-    server_addr.sin_addr.s_addr = INADDR_ANY; // Bind to all available interfaces
-    server_addr.sin_port = htons(PORT);       // Convert port to network byte order
+    server_addr.sin_addr.s_addr =
+        INADDR_ANY;                      // Bind to all available interfaces
+    server_addr.sin_port = htons(PORT);  // Convert port to network byte order
 
     // Bind to port
-    if (bind(sock, reinterpret_cast<sockaddr*>(&server_addr), sizeof(server_addr)) < 0) {
+    if (bind(sock, reinterpret_cast<sockaddr*>(&server_addr),
+             sizeof(server_addr)) < 0) {
         std::cerr << "Bind failed, errno=" << sock << "\n";
         close(sock);
         return 1;
@@ -49,7 +52,8 @@ int main() {
         ssize_t bytes_received = recvmsg(sock, &msg, 0);
 
         if (bytes_received < 0) {
-            std::cerr << "Failed to receive bytes, errno=" << bytes_received << "\n";
+            std::cerr << "Failed to receive bytes, errno=" << bytes_received
+                      << "\n";
             break;
         }
 
@@ -64,9 +68,9 @@ int main() {
         char client_ip[INET_ADDRSTRLEN];
         inet_ntop(AF_INET, &(client_addr.sin_addr), client_ip, INET_ADDRSTRLEN);
 
-        std::cout << "Received " << bytes_received << " bytes from " 
-                  << client_ip << ":" << ntohs(client_addr.sin_port) 
-                  << " -> " << buffer << "\n";
+        std::cout << "Received " << bytes_received << " bytes from "
+                  << client_ip << ":" << ntohs(client_addr.sin_port) << " -> "
+                  << buffer << "\n";
     }
 
     // Cleanup
