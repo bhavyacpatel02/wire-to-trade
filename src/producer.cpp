@@ -40,6 +40,10 @@ int main() {
                                     sizeof(msg),  // Exact size in bytes
                                     0, reinterpret_cast<sockaddr*>(&dest_addr),
                                     sizeof(dest_addr));
+
+        if (bytes_sent < 0) {
+            std::cerr << "Failed to send bytes to consumer\n";
+        }
     }
 
     return 0;
