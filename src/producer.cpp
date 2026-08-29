@@ -7,8 +7,8 @@
 #include <iostream>
 #include <string_view>
 
-constexpr const char* SERVER_IP = "127.0.0.1";
-constexpr int PORT = 31337;
+#include "constants.h"
+#include "message.h"
 
 int main() {
     int sock = socket(AF_INET, SOCK_DGRAM, 0);
@@ -23,21 +23,23 @@ int main() {
     dest_addr.sin_port = htons(PORT);
 
     // Convert IP address string to binary format
-    if (inet_pton(AF_INET, SERVER_IP, &dest_addr.sin_addr) <= 0) {
+    if (inet_pton(AF_INET, SERVER_IP.data(), &dest_addr.sin_addr) <= 0) {
         std::cerr << "Invalid or unsupported destination IP address\n";
         close(sock);
         return 1;
     }
 
     // Messages to send
-    static constexpr std::array<std::string_view, 2> messages = {"Hello",
-                                                                 "World!"};
+    static constexpr std::array<Message, 2> messages = {
+        Message{.seq_num = 1, .quantity = 10, .price = 500},
+        Message{.seq_num = 2, .quantity = 20, .price = 600}
+    };
 
     for (const auto msg : messages) {
         ssize_t bytes_sent = sendto(
             sock,
-            msg.data(),  // Pointer to contiguous byte buffer
-            msg.size(),  // Exact size in bytes
+            &msg,  // Pointer to contiguous byte buffer
+            sizeof(msg),  // Exact size in bytes
             0, reinterpret_cast<sockaddr*>(&dest_addr), sizeof(dest_addr));
     }
 

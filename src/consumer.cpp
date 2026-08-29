@@ -5,8 +5,8 @@
 #include <cerrno>
 #include <iostream>
 
-constexpr int PORT = 31337;
-constexpr size_t BUFFER_SIZE = 1024;
+#include "constants.h"
+#include "message.h"
 
 int main() {
     int sock = socket(AF_INET, SOCK_DGRAM, 0);
@@ -53,8 +53,7 @@ int main() {
         ssize_t bytes_received = recvmsg(sock, &msg, 0);
 
         if (bytes_received < 0) {
-            std::cerr << "Failed to receive bytes, errno=" << errno
-                      << "\n";
+            std::cerr << "Failed to receive bytes, errno=" << errno << "\n";
             break;
         }
 
