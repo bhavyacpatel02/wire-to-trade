@@ -22,6 +22,11 @@ static void install_signal_handlers() {
     sigaction(SIGTERM, &sa, nullptr);
 }
 
+struct Counters {
+    uint32_t max_seq_num = 0;
+    uint32_t dropped = 0;
+};
+
 int main() {
     install_signal_handlers();
 
@@ -62,7 +67,7 @@ int main() {
     msg.msg_iov = &iov;
     msg.msg_iovlen = 1;
 
-    int prev_seq_num = 0;
+    Counters recv_counts{};
     while (true) {
         // Reset msg_namelen before each call because recvmsg updates it
         msg.msg_namelen = sizeof(client_addr);
@@ -89,23 +94,27 @@ int main() {
 
         if (bytes_received != sizeof(Message)) {
             std::cerr << "WARNING: Bytes received does not match Message size, "
-                         "skipping packet.";
+                         "skipping packet.\n";
             continue;
         }
 
         Message m;
         memcpy(&m, buffer, sizeof(m));  // Interpret buffer's bytes as a Message
 
+        // Should probably comment this out later when doing benchmarking
         std::cout << "Received " << bytes_received << " bytes from "
                   << client_ip << ":" << ntohs(client_addr.sin_port)
                   << " -> message #" << m.seq_num << "\n";
 
-        if (m.seq_num - prev_seq_num > 1) {
-            std::cerr << "WARNING: Sequence numbers in range ["
-                      << prev_seq_num + 1 << ", " << m.seq_num - 1
-                      << "] dropped\n";
+        if (m.seq_num - recv_counts.max_seq_num > 1) {
+            recv_counts.dropped = m.seq_num - recv_counts.max_seq_num - 1;
         }
+        recv_counts.max_seq_num = m.seq_num;
     }
+
+    // Print statistics
+    std::cout << "Received final sequence number " << recv_counts.max_seq_num
+              << ", with " << recv_counts.dropped << " dropped messages.\n";
 
     // Cleanup
     close(sock);
