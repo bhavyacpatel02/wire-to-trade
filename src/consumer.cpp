@@ -6,7 +6,7 @@
 constexpr int PORT = 8080;
 constexpr size_t BUFFER_SIZE = 1024;
 
-int main(int argc, char** argv) {
+int main() {
     int sock = socket(AF_INET, SOCK_DGRAM, 0);
     if (sock < 0) {
         std::cerr << "Failed to create socket, errno=" << sock << "\n";
