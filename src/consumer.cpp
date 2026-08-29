@@ -2,15 +2,16 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
+#include <cerrno>
 #include <iostream>
 
-constexpr int PORT = 8080;
+constexpr int PORT = 31337;
 constexpr size_t BUFFER_SIZE = 1024;
 
 int main() {
     int sock = socket(AF_INET, SOCK_DGRAM, 0);
     if (sock < 0) {
-        std::cerr << "Failed to create socket, errno=" << sock << "\n";
+        std::cerr << "Failed to create socket, errno=" << errno << "\n";
         return 1;
     }
 
@@ -24,7 +25,7 @@ int main() {
     // Bind to port
     if (bind(sock, reinterpret_cast<sockaddr*>(&server_addr),
              sizeof(server_addr)) < 0) {
-        std::cerr << "Bind failed, errno=" << sock << "\n";
+        std::cerr << "Bind failed, errno=" << errno << "\n";
         close(sock);
         return 1;
     }
@@ -52,7 +53,7 @@ int main() {
         ssize_t bytes_received = recvmsg(sock, &msg, 0);
 
         if (bytes_received < 0) {
-            std::cerr << "Failed to receive bytes, errno=" << bytes_received
+            std::cerr << "Failed to receive bytes, errno=" << errno
                       << "\n";
             break;
         }

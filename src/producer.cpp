@@ -3,16 +3,17 @@
 #include <unistd.h>
 
 #include <array>
+#include <cerrno>
 #include <iostream>
 #include <string_view>
 
 constexpr const char* SERVER_IP = "127.0.0.1";
-constexpr int PORT = 8080;
+constexpr int PORT = 31337;
 
 int main() {
     int sock = socket(AF_INET, SOCK_DGRAM, 0);
     if (sock < 0) {
-        std::cerr << "Failed to create socket, errno=" << sock << "\n";
+        std::cerr << "Failed to create socket, errno=" << errno << "\n";
         return 1;
     }
 
