@@ -32,15 +32,14 @@ int main() {
     // Messages to send
     static constexpr std::array<Message, 2> messages = {
         Message{.seq_num = 1, .quantity = 10, .price = 500},
-        Message{.seq_num = 2, .quantity = 20, .price = 600}
-    };
+        Message{.seq_num = 2, .quantity = 20, .price = 600}};
 
     for (const auto msg : messages) {
-        ssize_t bytes_sent = sendto(
-            sock,
-            &msg,  // Pointer to contiguous byte buffer
-            sizeof(msg),  // Exact size in bytes
-            0, reinterpret_cast<sockaddr*>(&dest_addr), sizeof(dest_addr));
+        ssize_t bytes_sent = sendto(sock,
+                                    &msg,  // Pointer to contiguous byte buffer
+                                    sizeof(msg),  // Exact size in bytes
+                                    0, reinterpret_cast<sockaddr*>(&dest_addr),
+                                    sizeof(dest_addr));
     }
 
     return 0;
