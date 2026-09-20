@@ -69,6 +69,12 @@ void receive_messages(int sock, std::queue<Message>& queue, std::mutex& mutex,
     msg.msg_iov = &iov;
     msg.msg_iovlen = 1;
 
+    // Used to set timeout
+    struct timeval timeout;
+    timeout.tv_sec = 1;  // 1 second
+    timeout.tv_usec = 0; // 0 microseconds remainder
+    bool timeout_set = false;
+
     while (true) {
         // Reset msg_namelen before each call because recvmsg updates it
         msg.msg_namelen = sizeof(client_addr);
@@ -97,6 +103,11 @@ void receive_messages(int sock, std::queue<Message>& queue, std::mutex& mutex,
             std::cerr << "WARNING: Bytes received does not match Message size, "
                          "skipping packet.\n";
             continue;
+        } else if (!timeout_set) {
+            // On first successful message received, set a timeout so consumer
+            // process exits after some inactivity
+            setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof timeout);
+            timeout_set = true;
         }
 
         Message m;
