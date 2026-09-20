@@ -10,6 +10,7 @@
 #include <iostream>
 #include <mutex>
 #include <queue>
+#include <string>
 #include <thread>
 
 #include "constants.h"
@@ -44,8 +45,9 @@ static sigset_t stop_signal_set() {
 }
 
 struct ReadCounters {
-    uint32_t max_seq_num = 0;
-    uint32_t dropped = 0;
+    uint32_t max_seq_num = 0;   // Highest sequence number seen so far
+    uint32_t received = 0;      // Messages whose sequence number was new
+    uint32_t out_of_order = 0;  // Sequence number <= max: late or duplicate
 };
 
 void receive_messages(int sock, std::queue<Message>& queue, std::mutex& mutex,
@@ -96,9 +98,6 @@ void receive_messages(int sock, std::queue<Message>& queue, std::mutex& mutex,
             std::cerr << "WARNING: Data truncated!\n";
         }
 
-        char client_ip[INET_ADDRSTRLEN];
-        inet_ntop(AF_INET, &(client_addr.sin_addr), client_ip, INET_ADDRSTRLEN);
-
         if (bytes_received != sizeof(Message)) {
             std::cerr << "WARNING: Bytes received does not match Message size, "
                          "skipping packet.\n";
@@ -145,18 +144,32 @@ void consume_messages(std::queue<Message>& queue, std::mutex& mutex,
             }
         }
 
-        // Update stastics if message popped
+        // Update statistics if message popped.
+        //
+        // Compare, never subtract: unsigned subtraction wraps when a sequence
+        // number goes backwards (producer restart, reordering). "Missing" is
+        // computed once at the end from N, so no running gap count is needed.
+        // The first message is always new, whatever number it carries.
         if (popped) {
-            if (msg.seq_num - read_counts.max_seq_num > 1) {
-                read_counts.dropped +=
-                    msg.seq_num - read_counts.max_seq_num - 1;
+            if (read_counts.received == 0 ||
+                msg.seq_num > read_counts.max_seq_num) {
+                read_counts.max_seq_num = msg.seq_num;
+                ++read_counts.received;
+            } else {
+                ++read_counts.out_of_order;
             }
-            read_counts.max_seq_num = msg.seq_num;
         }
     }
 }
 
-int main() {
+int main(int argc, char* argv[]) {
+    // Parse arguments
+    if (argc < 2) {
+        std::cerr << "Missing CLI argument for number of messages expected\n";
+        return 1;
+    }
+    const uint32_t expected = std::stoul(argv[1]);
+
     // Shared structures to faciliate communication across two threads
     std::queue<Message> queue;
     std::mutex mutex;
@@ -203,9 +216,18 @@ int main() {
     c.join();
     close(sock);
 
-    // Print statistics
-    std::cout << "Received final sequence number " << read_counts.max_seq_num
-              << ", with " << read_counts.dropped << " dropped messages.\n";
+    // Print statistics. Reconciliation identity: received + missing == expected.
+    std::cout << "Expected " << expected << " messages: received "
+              << read_counts.received << ", out of order "
+              << read_counts.out_of_order << ", highest sequence number "
+              << read_counts.max_seq_num << "\n";
+    if (read_counts.received > expected) {
+        // Compare before subtracting, or this wraps too.
+        std::cout << "WARNING: received more new messages than expected. Was "
+                     "the producer run with a larger N?\n";
+    } else {
+        std::cout << "Missing: " << expected - read_counts.received << "\n";
+    }
 
     return 0;
 }
