@@ -10,7 +10,14 @@
 #include "constants.h"
 #include "message.h"
 
-int main() {
+int main(int argc, char* argv[]) {
+    // Parse arguments
+    if (argc < 2) {
+        std::cerr << "Missing CLI argument for number of messages\n";
+        return 1;
+    }
+    int num_msgs = std::stoi(argv[1]);
+
     int sock = socket(AF_INET, SOCK_DGRAM, 0);
     if (sock < 0) {
         std::cerr << "Failed to create socket, errno=" << errno << "\n";
@@ -29,10 +36,12 @@ int main() {
         return 1;
     }
 
-    // Messages to send
-    static constexpr std::array<Message, 2> messages = {
-        Message{.seq_num = 1, .quantity = 10, .price = 500},
-        Message{.seq_num = 2, .quantity = 20, .price = 600}};
+    // Create messages to send
+    std::vector<Message> messages;
+    messages.reserve(num_msgs);
+    for (int i = 0; i < num_msgs; ++i) {
+        messages.emplace_back(i, 10 * i, 100 * i);
+    }
 
     for (const auto msg : messages) {
         ssize_t bytes_sent = sendto(sock,
