@@ -88,6 +88,10 @@ void receive_messages(int sock, std::queue<Message>& queue, std::mutex& mutex,
                 if (g_stop) break;  // Shutdown requested
                 continue;           // Some other signal, resume waiting
             }
+            if (errno == EAGAIN) {
+                std::cout << "Data receive timeout, shutting down now\n";
+                break;
+            }
             std::cerr << "Failed to recevied bytes, errno=" << errno << " ("
                       << std::strerror(errno) << ")\n";
             break;
