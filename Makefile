@@ -24,7 +24,7 @@ TSAN_FLAGS    := $(BASE) -O1 -g -fno-omit-frame-pointer -fsanitize=thread
 
 SRC   := src
 BUILD := build
-PROGS := consumer producer
+PROGS := consumer producer probe
 
 RELEASE_BINS := $(addprefix $(BUILD)/release/,$(PROGS))
 ASAN_BINS    := $(addprefix $(BUILD)/asan/,$(PROGS))
