@@ -19,11 +19,13 @@ make          # optimised          -> build/release/
 make asan     # ASan + UBSan       -> build/asan/
 make tsan     # ThreadSanitizer    -> build/tsan/
 make all      # release + asan
+make test     # tests/test_*.cpp, GoogleTest, built under ASan + UBSan
 make clean
 ```
 
-Toolchain: Apple clang 16, `-std=c++20`, macOS on Apple Silicon (M1). No
-external dependencies.
+Toolchain: Apple clang 16, `-std=c++20`, macOS on Apple Silicon (M1). The
+only external dependency is GoogleTest, for `make test` only:
+`brew install googletest`.
 
 ## Run
 

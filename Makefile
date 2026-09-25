@@ -4,6 +4,7 @@
 #   make asan     ASan + UBSan         -> build/asan/
 #   make tsan     ThreadSanitizer      -> build/tsan/
 #   make all      release + asan
+#   make test     build tests/test_*.cpp under ASan + UBSan and run them
 #   make clean    remove build/
 #
 # Each configuration writes to its own directory, so they never clobber each
@@ -25,6 +26,17 @@ TSAN_FLAGS    := $(BASE) -O1 -g -fno-omit-frame-pointer -fsanitize=thread
 SRC   := src
 BUILD := build
 PROGS := consumer producer probe
+
+# Tests: every tests/test_*.cpp becomes its own GoogleTest binary, built with
+# the ASan + UBSan flags so each test run is also a sanitizer run.
+# GoogleTest comes from `brew install googletest`. On Linux, install the distro
+# package and run `make test GTEST_PREFIX=/usr`.
+TESTS        := tests
+GTEST_PREFIX ?= /opt/homebrew/opt/googletest
+GTEST_CFLAGS := -isystem $(GTEST_PREFIX)/include
+GTEST_LIBS   := -L$(GTEST_PREFIX)/lib -lgtest -lgtest_main
+TEST_SRCS    := $(wildcard $(TESTS)/test_*.cpp)
+TEST_BINS    := $(patsubst $(TESTS)/%.cpp,$(BUILD)/test/%,$(TEST_SRCS))
 
 RELEASE_BINS := $(addprefix $(BUILD)/release/,$(PROGS))
 ASAN_BINS    := $(addprefix $(BUILD)/asan/,$(PROGS))
@@ -49,6 +61,13 @@ $(BUILD)/tsan/%: $(SRC)/%.cpp
 	@mkdir -p $(dir $@)
 	$(CXX) $(TSAN_FLAGS) $< -o $@
 
+test: $(TEST_BINS)
+	@for t in $(TEST_BINS); do echo "== $$t"; ./$$t || exit 1; done
+
+$(BUILD)/test/%: $(TESTS)/%.cpp
+	@mkdir -p $(dir $@)
+	$(CXX) $(ASAN_FLAGS) -I$(SRC) $(GTEST_CFLAGS) $< -o $@ $(GTEST_LIBS)
+
 clean:
 	rm -rf $(BUILD)
 
@@ -56,4 +75,4 @@ clean:
 # there are headers to depend on.
 -include $(shell find $(BUILD) -name '*.d' 2>/dev/null)
 
-.PHONY: release asan tsan all clean
+.PHONY: release asan tsan all test clean

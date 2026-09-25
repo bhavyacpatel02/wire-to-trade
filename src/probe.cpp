@@ -4,6 +4,8 @@
 #include <iostream>
 #include <thread>
 
+#include "clock.h"
+
 // This is the virtual timer counter, we're gonna use it as our timestamp
 uint64_t read_cntvct() {
     uint64_t value;
@@ -25,19 +27,19 @@ uint64_t read_cntfrq() {
 }
 
 int main() {
-    auto freq = read_cntfrq();
+    auto freq = Clock::frequency();
 
-    auto cnt1 = read_cntvct();
+    auto cnt1 = Clock::now();
     auto tim1 = std::chrono::steady_clock::now();
     std::this_thread::sleep_for(std::chrono::seconds(1));
-    auto cnt2 = read_cntvct();
+    auto cnt2 = Clock::now();
     auto tim2 = std::chrono::steady_clock::now();
 
     std::chrono::duration<double> elapsed = tim2 - tim1;
     const double ns_per_tick = 1e9 / static_cast<double>(freq);
     std::cout << std::fixed;  // Sticky: no scientific notation from here on
-    std::cout << "Freq: " << freq << " ticks/s ("
-              << std::setprecision(2) << ns_per_tick << " ns per tick)"
+    std::cout << "Freq: " << freq << " ticks/s (" << std::setprecision(2)
+              << ns_per_tick << " ns per tick)"
               << "\nCount1: " << cnt1 << "\nCount2: " << cnt2 << "\n";
     auto adjustedFreq = (cnt2 - cnt1) / elapsed.count();
     std::cout << "Adjusted Freq: " << std::setprecision(0) << adjustedFreq
@@ -46,7 +48,7 @@ int main() {
     // Batch cost
     auto start = std::chrono::steady_clock::now();
     for (int i = 0; i < 1000000; ++i) {
-        read_cntvct();
+        Clock::now();
     }
     auto end = std::chrono::steady_clock::now();
 
@@ -63,9 +65,9 @@ int main() {
     };
 
     auto diffCnts = DiffCnts{};
-    auto prevCnt = read_cntvct();
+    auto prevCnt = Clock::now();
     for (int i = 1; i < 1000000; ++i) {
-        auto cnt = read_cntvct();
+        auto cnt = Clock::now();
         auto diff = cnt - prevCnt;
         if (diff == 0) {
             ++diffCnts.zero;
