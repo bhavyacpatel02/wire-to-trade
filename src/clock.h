@@ -17,12 +17,17 @@ class Clock {
         return value;
     }
 
-    // This is the counter frequency (NOT CPU GHz). This is how we can actually
-    // interpret the virtual timer counter
+    // Counter frequency (NOT CPU GHz). This is how we interpret virtual counter
     static uint64_t frequency() {
         uint64_t value;
         asm volatile("mrs %0, cntfrq_el0" : "=r"(value));
         return value;
+    }
+
+    static double ticks_to_ns(uint64_t ticks) {
+        static const double ns_per_tick =
+            1e9 / static_cast<double>(frequency());
+        return ns_per_tick * ticks;
     }
 };
 
